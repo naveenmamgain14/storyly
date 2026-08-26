@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role     @default(EDITOR)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  stories      Story[]
+  collections  Collection[]
+  media        Media[]
+  apiKeys      ApiKey[]
+
+  @@map("users")
+}
+
+model Story {
+  id           String      @id @default(uuid())
+  title        String
+  description  String?
+  status       StoryStatus @default(DRAFT)
+  order        Int         @default(0)
+  collectionId String?     @map("collection_id")
+  createdById  String      @map("created_by")
+  publishedAt  DateTime?   @map("published_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  collection Collection?       @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  createdBy  User              @relation(fields: [createdById], references: [id])
+  items      StoryItem[]
+  events     AnalyticsEvent[]
+
+  @@index([status, publishedAt])
+  @@index([collectionId])
+  @@map("stories")
+}
+
+model StoryItem {
+  id         String        @id @default(uuid())
+  storyId    String        @map("story_id")
+  mediaId    String        @map("media_id")
+  type       MediaType
+  duration   Int           @default(5)
+  order      Int           @default(0)
+  actionUrl  String?       @map("action_url")
+  actionText String?       @map("action_text")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  story  Story              @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  media  Media              @relation(fields: [mediaId], references: [id])
+  events AnalyticsEvent[]
+
+  @@index([storyId])
+  @@map("story_items")
+}
+
+model Media {
+  id               String    @id @default(uuid())
+  filename         String
+  originalFilename String    @map("original_filename")
+  mimeType         String    @map("mime_type")
+  size             BigInt
+  width            Int?
+  height           Int?
+  storagePath      String    @map("storage_path")
+  cdnUrl           String    @map("cdn_url")
+  thumbnailUrl     String?   @map("thumbnail_url")
+  uploadedById     String    @map("uploaded_by")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  uploadedBy User        @relation(fields: [uploadedById], references: [id])
+  storyItems StoryItem[]
+
+  @@map("media")
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  iconUrl     String?  @map("icon_url")
+  order       Int      @default(0)
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User    @relation(fields: [createdById], references: [id])
+  stories   Story[]
+
+  @@map("collections")
+}
+
+model AnalyticsEvent {
+  id          String    @id @default(uuid())
+  eventType   EventType @map("event_type")
+  storyId     String    @map("story_id")
+  storyItemId String?   @map("story_item_id")
+  userId      String?   @map("user_id")
+  deviceId    String    @map("device_id")
+  appId       String    @map("app_id")
+  sessionId   String    @map("session_id")
+  timestamp   DateTime  @default(now())
+  metadata    Json?
+
+  story     Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  storyItem StoryItem? @relation(fields: [storyItemId], references: [id], onDelete: SetNull)
+
+  @@index([storyId, timestamp])
+  @@index([eventType, timestamp])
+  @@index([appId, timestamp])
+  @@map("analytics_events")
+}
+
+model ApiKey {
+  id          String       @id @default(uuid())
+  key         String       @unique
+  appName     String       @map("app_name")
+  appId       String       @map("app_id")
+  platform    Platform
+  isActive    Boolean      @default(true) @map("is_active")
+  createdById String       @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  lastUsedAt  DateTime?    @map("last_used_at")
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([key])
+  @@map("api_keys")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum StoryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum EventType {
+  IMPRESSION
+  VIEW
+  CLICK
+  COMPLETE
+  DISMISS
+}
+
+enum Platform {
+  ANDROID
+  IOS
+  WEB
+}
