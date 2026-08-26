@@ -1,66 +1,46 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# Testing
-coverage/
-
-# Production builds
-dist/
-build/
-*.apk
-*.aab
-
-# Environment
-.env
-.env.local
-.env.production
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build outputs
+dist/
+build/
 *.log
 
 # Database
-*.sqlite
 *.db
+*.sqlite
 
-# Uploads
-uploads/*
-!uploads/.gitkeep
+# Uploads (keep structure, ignore files)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Production secrets
+*.pem
+*.key
+*.cert
 
 # Android
-*.iml
+*.apk
+*.aab
 .gradle/
 local.properties
-.android/
-.externalNativeBuild/
-.cxx/
-*.hprof
-
-# macOS
-.DS_Store
-
-# Docker
-docker/data/
-
-# Build artifacts
-android-sdk/build/
-android-sdk/*/build/
-backend/dist/
-dashboard/dist/
-
-# Prisma
-prisma/.env
-prisma/migrations/*_tmp/
