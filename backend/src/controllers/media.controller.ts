@@ -95,7 +95,7 @@ export const mediaController = {
   async getAll(req: Request, res: Response) {
     try {
       const media = await prisma.media.findMany({
-        orderBy: { created_at: 'desc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       res.json({
@@ -128,7 +128,7 @@ export const mediaController = {
       }
 
       // Delete file from disk
-      const filePath = path.join(uploadDir, path.basename(media.url));
+      const filePath = path.join(uploadDir, path.basename(media.cdnUrl));
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
