@@ -1,0 +1,21 @@
+{
+  "name": "storyly-backend",
+  "description": "Storyly Backend API",
+  "repository": "https://github.com/naveenmamgain14/storyly",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "value": "production"
+    },
+    "PORT": {
+      "value": "3000"
+    }
+  },
+  "scripts": {
+    "postdeploy": "npx prisma db push && node scripts/create-api-key.js"
+  }
+}

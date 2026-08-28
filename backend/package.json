@@ -5,14 +5,19 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "npx prisma generate && tsc",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
-    "setup:prod": "npx prisma db push && node scripts/create-api-key.js"
+    "setup:prod": "npx prisma db push && node scripts/create-api-key.js",
+    "postinstall": "npx prisma generate"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "keywords": [
     "storyly",
