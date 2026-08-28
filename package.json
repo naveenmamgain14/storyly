@@ -1,0 +1,22 @@
+{
+  "name": "storyly",
+  "version": "1.0.0",
+  "description": "Storyly Platform - Instagram-style stories for Android",
+  "scripts": {
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm run build",
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naveenmamgain14/storyly.git"
+  },
+  "keywords": ["storyly", "stories", "sdk", "android"],
+  "author": "Naveen Mamgain",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
