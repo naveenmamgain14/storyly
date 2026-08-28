@@ -25,6 +25,7 @@ async function createApiKey() {
         key: 'sk_prod_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
         name: 'Production SDK Key',
         appName: 'Storyly Production',
+        appId: 'storyly_prod_app',
         type: 'SDK',
         isActive: true,
         createdById: user.id
