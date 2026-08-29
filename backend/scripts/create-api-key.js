@@ -23,10 +23,9 @@ async function createApiKey() {
     const apiKey = await prisma.apiKey.create({
       data: {
         key: 'sk_prod_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-        name: 'Production SDK Key',
         appName: 'Storyly Production',
         appId: 'storyly_prod_app',
-        type: 'SDK',
+        platform: 'ANDROID',
         isActive: true,
         createdById: user.id
       }
