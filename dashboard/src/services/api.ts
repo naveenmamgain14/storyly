@@ -6,13 +6,6 @@ const API_BASE_URL = 'http://localhost:3000/api/v1'
 // In production, this should come from user settings
 const API_KEY = 'sk_storyly_android_app_2026'
 
-const api = axios.create({
-  baseUrl: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
 export interface Media {
   id: string
   type: 'IMAGE' | 'VIDEO'
