@@ -14,7 +14,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Without this, a successful login leaves the user sitting on /login,
+            because this route matches regardless of auth state. */}
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
 
         {isAuthenticated ? (
           <Route path="/" element={<Layout />}>
