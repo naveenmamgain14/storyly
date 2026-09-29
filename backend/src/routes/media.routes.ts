@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { mediaController, upload } from '../controllers/media.controller';
-import { validateApiKey } from '../middleware/auth';
+import { requireAuth } from '../middleware/requireAuth';
 
 export const mediaRouter = Router();
 
-// All media routes require API key
-mediaRouter.use(validateApiKey);
+// All media routes require an authenticated admin
+mediaRouter.use(requireAuth);
 
 // Media routes
 mediaRouter.post('/upload', upload.single('file'), mediaController.upload);

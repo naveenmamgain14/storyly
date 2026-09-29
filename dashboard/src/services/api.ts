@@ -1,8 +1,28 @@
 import axios from 'axios'
 
+import { useAuthStore } from '@/store/authStore'
+
 const API_BASE_URL = '/api/v1'
 
-const API_KEY = 'sk_35baf0a65c31b273ed2f9c043a49997f4769d78054128558ade21beb9380e23b'
+// No API key lives in this bundle any more: the dashboard authenticates as a
+// user, so reading the JavaScript no longer grants access to the content API.
+const authHeaders = (): Record<string, string> => {
+  const token = useAuthStore.getState().token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+// An expired or revoked session should drop straight back to the login screen
+// rather than leaving the UI in a half-broken state.
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status
+    if (status === 401 || status === 403) {
+      useAuthStore.getState().logout()
+    }
+    return Promise.reject(error)
+  }
+)
 
 export interface Media {
   id: string
@@ -35,7 +55,7 @@ export const storiesApi = {
     try {
       // Use the /stories endpoint (not /sdk/stories) for full data with nested media
       const response = await axios.get(`${API_BASE_URL}/stories`, {
-        headers: { 'X-API-Key': API_KEY },
+        headers: authHeaders(),
       })
       console.log('API Response:', response.data)
       return response.data.data || []
@@ -57,10 +77,7 @@ export const storiesApi = {
         `${API_BASE_URL}/media/upload`,
         formData,
         {
-          headers: {
-            'X-API-Key': API_KEY,
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
         }
       )
 
@@ -83,7 +100,7 @@ export const storiesApi = {
           ],
         },
         {
-          headers: { 'X-API-Key': API_KEY },
+          headers: authHeaders(),
         }
       )
 
@@ -113,7 +130,7 @@ export const storiesApi = {
     }
   ): Promise<void> {
     try {
-      const headers = { 'X-API-Key': API_KEY }
+      const headers = authHeaders()
       const uploadHeaders = { ...headers, 'Content-Type': 'multipart/form-data' }
 
       const uploadFile = async (file: File): Promise<string> => {
@@ -172,7 +189,7 @@ export const storiesApi = {
   async delete(id: string): Promise<void> {
     try {
       await axios.delete(`${API_BASE_URL}/stories/${id}`, {
-        headers: { 'X-API-Key': API_KEY },
+        headers: authHeaders(),
       })
     } catch (error) {
       console.error('Failed to delete story:', error)
@@ -184,11 +201,11 @@ export const storiesApi = {
     try {
       if (status === 'PUBLISHED') {
         await axios.post(`${API_BASE_URL}/stories/${id}/publish`, {}, {
-          headers: { 'X-API-Key': API_KEY },
+          headers: authHeaders(),
         })
       } else {
         await axios.put(`${API_BASE_URL}/stories/${id}`, { status }, {
-          headers: { 'X-API-Key': API_KEY },
+          headers: authHeaders(),
         })
       }
     } catch (error) {

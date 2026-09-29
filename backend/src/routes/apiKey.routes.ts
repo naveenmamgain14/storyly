@@ -1,6 +1,10 @@
 import { Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth';
 
 export const apiKeyRouter = Router();
+
+// Management surface: admin session required
+apiKeyRouter.use(requireAuth);
 
 // TODO: Implement API key management routes
 // GET /api-keys

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { storyController } from '../controllers/story.controller';
-import { validateApiKey } from '../middleware/auth';
+import { requireAuth } from '../middleware/requireAuth';
 
 export const storyRouter = Router();
 
-// All story routes require API key
-storyRouter.use(validateApiKey);
+// All story routes require an authenticated admin
+storyRouter.use(requireAuth);
 
 // Story management routes
 storyRouter.get('/', storyController.getAll);
