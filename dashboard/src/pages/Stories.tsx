@@ -1,4 +1,12 @@
 import { useState, useEffect } from 'react'
+
+type EditFrame = {
+  key: string
+  mediaId?: string
+  url?: string
+  type: 'IMAGE' | 'VIDEO'
+  newFile: File | null
+}
 import { storiesApi, Story } from '../services/api'
 
 interface MediaUpload {
@@ -20,7 +28,7 @@ export function Stories() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
-  const [editFile, setEditFile] = useState<File | null>(null)
+  const [editFrames, setEditFrames] = useState<EditFrame[]>([])
   const [editThumb, setEditThumb] = useState<File | null>(null)
 
   // Load stories from backend on mount
@@ -117,14 +125,44 @@ export function Stories() {
     setEditingId(story.id)
     setEditTitle(story.title)
     setEditDescription(story.description || '')
-    setEditFile(null)
     setEditThumb(null)
+    setEditFrames(
+      (story.items || []).map((item, i) => ({
+        key: item.id || `frame-${i}`,
+        mediaId: item.media?.id,
+        url: item.media?.cdnUrl,
+        type: item.type,
+        newFile: null,
+      }))
+    )
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setEditFile(null)
+    setEditFrames([])
     setEditThumb(null)
+  }
+
+  const replaceFrame = (key: string, file: File | null) => {
+    setEditFrames((prev) =>
+      prev.map((f) => (f.key === key ? { ...f, newFile: file } : f))
+    )
+  }
+
+  const removeFrame = (key: string) => {
+    setEditFrames((prev) => prev.filter((f) => f.key !== key))
+  }
+
+  const addFrame = (file: File | null) => {
+    if (!file) return
+    setEditFrames((prev) => [
+      ...prev,
+      {
+        key: `new-${Date.now()}-${prev.length}`,
+        type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        newFile: file,
+      },
+    ])
   }
 
   const saveEdit = async (story: Story) => {
@@ -134,12 +172,19 @@ export function Stories() {
     }
     try {
       setLoading(true)
+      if (editFrames.length === 0) {
+        alert('A story needs at least one frame')
+        return
+      }
       await storiesApi.update(story.id, {
         title: editTitle.trim(),
         description: editDescription,
-        file: editFile,
         thumbnailFile: editThumb,
-        currentMediaId: story.items?.[0]?.media?.id,
+        frames: editFrames.map((f) => ({
+          mediaId: f.mediaId,
+          newFile: f.newFile,
+          type: f.type,
+        })),
       })
       cancelEdit()
       await loadStories()
@@ -425,36 +470,92 @@ export function Stories() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Frames ({editFrames.length})
+                        </label>
+                        <div className="space-y-2">
+                          {editFrames.map((frame, idx) => (
+                            <div
+                              key={frame.key}
+                              className="flex gap-2 items-center border border-gray-200 rounded p-2"
+                            >
+                              <span className="text-xs text-gray-400 w-4">{idx + 1}</span>
+                              {frame.newFile ? (
+                                <div className="w-10 h-10 rounded bg-purple-100 border border-purple-200 flex items-center justify-center text-[10px] text-purple-700 text-center leading-tight">
+                                  new
+                                </div>
+                              ) : frame.url ? (
+                                <img
+                                  src={frame.url}
+                                  alt={`Frame ${idx + 1}`}
+                                  className="w-10 h-10 object-cover rounded border border-gray-200"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded bg-gray-100 border border-gray-200" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <input
+                                  type="file"
+                                  accept="image/*,video/*"
+                                  onChange={(e) =>
+                                    replaceFrame(frame.key, e.target.files?.[0] || null)
+                                  }
+                                  className="w-full text-xs"
+                                />
+                                <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                                  {frame.newFile
+                                    ? `Replacing with ${frame.newFile.name}`
+                                    : `${frame.type} — unchanged`}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => removeFrame(frame.key)}
+                                disabled={loading || editFrames.length === 1}
+                                title={
+                                  editFrames.length === 1
+                                    ? 'A story needs at least one frame'
+                                    : 'Remove this frame'
+                                }
+                                className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100 transition disabled:opacity-40"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-2">
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Full image / video
+                            Add a frame
                           </label>
                           <input
                             type="file"
                             accept="image/*,video/*"
-                            onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+                            onChange={(e) => {
+                              addFrame(e.target.files?.[0] || null)
+                              e.currentTarget.value = ''
+                            }}
                             className="w-full text-xs"
                           />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {editFile ? editFile.name : 'Leave empty to keep current'}
-                          </p>
                         </div>
+                      </div>
 
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Thumbnail (circle)
-                          </label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setEditThumb(e.target.files?.[0] || null)}
-                            className="w-full text-xs"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {editThumb ? editThumb.name : 'Leave empty to keep current'}
-                          </p>
-                        </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Thumbnail (circle in the app)
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setEditThumb(e.target.files?.[0] || null)}
+                          className="w-full text-xs"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {editThumb
+                            ? editThumb.name
+                            : 'Leave empty to keep current. Defaults to the first frame.'}
+                        </p>
                       </div>
 
                       <div className="flex gap-2">

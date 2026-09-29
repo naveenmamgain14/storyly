@@ -95,62 +95,74 @@ export const storiesApi = {
   },
 
   /**
-   * Partial edit. Any field left out is untouched: passing only a title renames
-   * the story without disturbing its media, and passing only a thumbnail keeps
-   * the full image as it was.
+   * Full edit. Frames are passed explicitly so untouched ones keep their existing
+   * media: sending only the changed frame would delete the rest, since the API
+   * replaces the whole item list.
    */
   async update(
     id: string,
     data: {
       title?: string
       description?: string
-      file?: File | null
       thumbnailFile?: File | null
-      currentMediaId?: string
+      frames?: Array<{
+        mediaId?: string
+        newFile?: File | null
+        type?: 'IMAGE' | 'VIDEO'
+      }>
     }
   ): Promise<void> {
     try {
-      let mediaId = data.currentMediaId
+      const headers = { 'X-API-Key': API_KEY }
+      const uploadHeaders = { ...headers, 'Content-Type': 'multipart/form-data' }
 
-      // A new full image means a new media record, which the story then points at.
-      if (data.file) {
+      const uploadFile = async (file: File): Promise<string> => {
         const form = new FormData()
-        form.append('file', data.file)
+        form.append('file', file)
         const res = await axios.post(`${API_BASE_URL}/media/upload`, form, {
-          headers: { 'X-API-Key': API_KEY, 'Content-Type': 'multipart/form-data' },
+          headers: uploadHeaders,
         })
-        mediaId = res.data.data.id
-      }
-
-      // The thumbnail hangs off the media record, so it needs one to attach to.
-      if (data.thumbnailFile && mediaId) {
-        const form = new FormData()
-        form.append('file', data.thumbnailFile)
-        await axios.post(`${API_BASE_URL}/media/${mediaId}/thumbnail`, form, {
-          headers: { 'X-API-Key': API_KEY, 'Content-Type': 'multipart/form-data' },
-        })
+        return res.data.data.id
       }
 
       const body: Record<string, unknown> = {}
       if (data.title !== undefined) body.title = data.title
       if (data.description !== undefined) body.description = data.description
 
-      // Only send items when the image actually changed, so an untouched story
-      // does not have its frames deleted and recreated for nothing.
-      if (data.file && mediaId) {
-        body.items = [
-          {
-            mediaId,
-            type: data.file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
-            duration: 5,
-            order: 0,
-          },
-        ]
+      let firstMediaId: string | undefined
+
+      if (data.frames && data.frames.length > 0) {
+        const items = []
+        for (let i = 0; i < data.frames.length; i++) {
+          const frame = data.frames[i]
+          const mediaId = frame.newFile ? await uploadFile(frame.newFile) : frame.mediaId
+          if (!mediaId) continue
+
+          const type =
+            frame.newFile?.type.startsWith('video/') ? 'VIDEO' : frame.type || 'IMAGE'
+
+          items.push({ mediaId, type, duration: 5, order: items.length })
+          if (items.length === 1) firstMediaId = mediaId
+        }
+        if (items.length === 0) {
+          throw new Error('A story needs at least one frame')
+        }
+        body.items = items
       }
 
-      await axios.put(`${API_BASE_URL}/stories/${id}`, body, {
-        headers: { 'X-API-Key': API_KEY },
-      })
+      // The circle image hangs off the first frame's media record.
+      if (data.thumbnailFile) {
+        const target = firstMediaId ?? data.frames?.[0]?.mediaId
+        if (target) {
+          const form = new FormData()
+          form.append('file', data.thumbnailFile)
+          await axios.post(`${API_BASE_URL}/media/${target}/thumbnail`, form, {
+            headers: uploadHeaders,
+          })
+        }
+      }
+
+      await axios.put(`${API_BASE_URL}/stories/${id}`, body, { headers })
     } catch (error) {
       console.error('Failed to update story:', error)
       throw error
