@@ -54,6 +54,7 @@ export const mediaController = {
       }
 
       const file = req.file;
+      const publicBase = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
       const type = file.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE';
 
       // Get the first user as uploader (temporary - should come from auth)
@@ -73,7 +74,7 @@ export const mediaController = {
           mimeType: file.mimetype,
           size: BigInt(file.size),
           storagePath: `/uploads/${file.filename}`,
-          cdnUrl: `http://localhost:3000/uploads/${file.filename}`,
+          cdnUrl: `${publicBase}/uploads/${file.filename}`,
           uploadedById: firstUser.id
         }
       });
@@ -88,6 +89,32 @@ export const mediaController = {
         success: false,
         error: 'Failed to upload file'
       });
+    }
+  },
+
+  // Attach (or replace) the thumbnail shown on the story circle
+  async uploadThumbnail(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No file uploaded' });
+      }
+
+      const existing = await prisma.media.findUnique({ where: { id } });
+      if (!existing) {
+        return res.status(404).json({ success: false, error: 'Media not found' });
+      }
+
+      const publicBase = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const media = await prisma.media.update({
+        where: { id },
+        data: { thumbnailUrl: `${publicBase}/uploads/${req.file.filename}` }
+      });
+
+      res.json({ success: true, data: media });
+    } catch (error) {
+      console.error('Upload thumbnail error:', error);
+      res.status(500).json({ success: false, error: 'Failed to upload thumbnail' });
     }
   },
 

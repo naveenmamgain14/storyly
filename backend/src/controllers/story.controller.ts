@@ -136,15 +136,29 @@ export const storyController = {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { title, description, status } = req.body;
+      const { title, description, status, items } = req.body;
+
+      // Undefined fields are left untouched by Prisma, so this stays a partial update.
+      const data: any = { title, description, status };
+
+      // Replacing the frames is opt-in: omit `items` and the existing media is kept.
+      if (Array.isArray(items) && items.length > 0) {
+        data.items = {
+          deleteMany: {},
+          create: items.map((item: any, index: number) => ({
+            type: item.type?.toUpperCase() || 'IMAGE',
+            media: { connect: { id: item.mediaId } },
+            duration: item.duration || 5,
+            actionUrl: item.action_url ?? item.actionUrl ?? null,
+            actionText: item.action_text ?? item.actionText ?? null,
+            order: item.order !== undefined ? item.order : index
+          }))
+        };
+      }
 
       const story = await prisma.story.update({
         where: { id },
-        data: {
-          title,
-          description,
-          status
-        },
+        data,
         include: {
           items: {
             include: {

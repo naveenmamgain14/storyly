@@ -37,7 +37,25 @@
       "Bash(git commit *)",
       "Bash(git branch *)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(ssh *)",
+      "Bash(composio search *)",
+      "Read(//Users/E2289/.ssh/**)",
+      "Bash(curl -I https://storyly-dashboard.nbg1-2.instapods.app/)",
+      "Bash(curl -s https://storyly-dashboard.nbg1-2.instapods.app/)",
+      "Bash(curl -s http://localhost:3001/api/v1/sdk/stories -H \"X-API-Key: sk_80a04e238f59d10ec6072aca8ad0cbcdead96cf2d32edf1c288e16c975216781\")",
+      "Bash(awk '{print $2}')",
+      "Bash(npm start *)",
+      "Bash(curl -s http://localhost:3001/)",
+      "Bash(curl *)",
+      "Bash(nc -zv db.sdsdwegkmkfdmiznjkty.supabase.co 5432)",
+      "Bash(adb version *)",
+      "Bash(adb devices *)",
+      "Bash(adb *)",
+      "Bash(xargs cat)",
+      "Bash(grep -v \"^\\\\.$\")",
+      "Bash(npx *)",
+      "WebFetch(domain:buildwithclaude.com)"
     ]
   }
 }

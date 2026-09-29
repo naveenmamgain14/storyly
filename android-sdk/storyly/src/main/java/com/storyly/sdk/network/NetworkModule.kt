@@ -55,8 +55,11 @@ object NetworkModule {
             .setLenient()
             .create()
 
+        // Ensure baseUrl ends with / (required by Retrofit)
+        val normalizedBaseUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+
         return Retrofit.Builder()
-            .baseUrl(baseUrl)
+            .baseUrl(normalizedBaseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()

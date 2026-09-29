@@ -17,6 +17,11 @@ export function Stories() {
   const [stories, setStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editFile, setEditFile] = useState<File | null>(null)
+  const [editThumb, setEditThumb] = useState<File | null>(null)
 
   // Load stories from backend on mount
   useEffect(() => {
@@ -103,6 +108,44 @@ export function Stories() {
     } catch (err) {
       console.error('Failed to delete story:', err)
       alert('Failed to delete story')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startEdit = (story: Story) => {
+    setEditingId(story.id)
+    setEditTitle(story.title)
+    setEditDescription(story.description || '')
+    setEditFile(null)
+    setEditThumb(null)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditFile(null)
+    setEditThumb(null)
+  }
+
+  const saveEdit = async (story: Story) => {
+    if (!editTitle.trim()) {
+      alert('Title cannot be empty')
+      return
+    }
+    try {
+      setLoading(true)
+      await storiesApi.update(story.id, {
+        title: editTitle.trim(),
+        description: editDescription,
+        file: editFile,
+        thumbnailFile: editThumb,
+        currentMediaId: story.items?.[0]?.media?.id,
+      })
+      cancelEdit()
+      await loadStories()
+    } catch (err) {
+      console.error('Failed to update story:', err)
+      alert('Failed to save changes')
     } finally {
       setLoading(false)
     }
@@ -273,8 +316,9 @@ export function Stories() {
 
           <div className="space-y-2">
             {stories.map((story) => {
-              // Get the first item's image for thumbnail
-              const thumbnailUrl = story.items?.[0]?.media?.cdnUrl
+              // Mirror the SDK: an explicit thumbnail wins, else the full image
+              const media = story.items?.[0]?.media
+              const thumbnailUrl = media?.thumbnailUrl || media?.cdnUrl
 
               return (
                 <div
@@ -330,6 +374,15 @@ export function Stories() {
                     {/* Action Buttons */}
                     <div className="flex gap-1.5 flex-shrink-0">
                       <button
+                        onClick={() =>
+                          editingId === story.id ? cancelEdit() : startEdit(story)
+                        }
+                        disabled={loading}
+                        className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition disabled:opacity-50"
+                      >
+                        {editingId === story.id ? 'Close' : 'Edit'}
+                      </button>
+                      <button
                         onClick={() => toggleStatus(story.id, story.status)}
                         disabled={loading}
                         className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition disabled:opacity-50 whitespace-nowrap"
@@ -345,6 +398,83 @@ export function Stories() {
                       </button>
                     </div>
                   </div>
+
+                  {editingId === story.id && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Description
+                        </label>
+                        <input
+                          type="text"
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Full image / video
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+                            className="w-full text-xs"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {editFile ? editFile.name : 'Leave empty to keep current'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Thumbnail (circle)
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setEditThumb(e.target.files?.[0] || null)}
+                            className="w-full text-xs"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {editThumb ? editThumb.name : 'Leave empty to keep current'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEdit(story)}
+                          disabled={loading}
+                          className="px-4 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition disabled:opacity-50"
+                        >
+                          {loading ? 'Saving...' : 'Save changes'}
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          disabled={loading}
+                          className="px-4 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

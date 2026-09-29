@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName
  * Configuration for Storyly SDK
  */
 data class StorylyConfig(
-    val baseUrl: String = "http://10.0.2.2:3000/api/v1", // Android emulator localhost
+    val baseUrl: String = "https://storyly-dashboard.nbg1-2.instapods.app/api/v1/", // Production backend with trailing slash
     val enableCache: Boolean = true,
     val cacheDuration: Long = 24 * 60 * 60 * 1000, // 24 hours
     val enableAnalytics: Boolean = true,
