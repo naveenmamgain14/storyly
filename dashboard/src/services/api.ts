@@ -214,3 +214,56 @@ export const storiesApi = {
     }
   },
 }
+
+export interface AnalyticsOverview {
+  totalStories: number
+  publishedStories: number
+  impressions: number
+  views: number
+  completions: number
+  dismissals: number
+  ctaTaps: number
+  uniqueDevices: number
+  sessions: number
+  completionRate: number
+  openRate: number
+}
+
+export interface StoryAnalytics {
+  storyId: string
+  title: string
+  status: string
+  impressions: number
+  views: number
+  completions: number
+  dismissals: number
+  ctaTaps: number
+  completionRate: number
+  openRate: number
+}
+
+export interface DailyAnalytics {
+  day: string
+  IMPRESSION: number
+  VIEW: number
+  CLICK: number
+  COMPLETE: number
+  DISMISS: number
+}
+
+export const analyticsApi = {
+  async overview(): Promise<AnalyticsOverview> {
+    const res = await axios.get(`${API_BASE_URL}/analytics/overview`, { headers: authHeaders() })
+    return res.data.data
+  },
+
+  async byStory(): Promise<StoryAnalytics[]> {
+    const res = await axios.get(`${API_BASE_URL}/analytics/stories`, { headers: authHeaders() })
+    return res.data.data
+  },
+
+  async daily(): Promise<DailyAnalytics[]> {
+    const res = await axios.get(`${API_BASE_URL}/analytics/daily`, { headers: authHeaders() })
+    return res.data.data
+  },
+}
