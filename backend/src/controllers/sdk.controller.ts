@@ -1,7 +1,20 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { storyCache } from '../lib/storyCache';
 
 const prisma = new PrismaClient();
+
+const lastTouched = new Map<string, number>();
+const TOUCH_INTERVAL_MS = 60_000;
+
+function touchKeyOccasionally(id: string): void {
+  const now = Date.now();
+  if (now - (lastTouched.get(id) ?? 0) < TOUCH_INTERVAL_MS) return;
+  lastTouched.set(id, now);
+  prisma.apiKey
+    .update({ where: { id }, data: { lastUsedAt: new Date() } })
+    .catch(() => { /* best effort, never fail a request over this */ });
+}
 
 export const sdkController = {
   // Get stories for SDK consumption
@@ -9,6 +22,14 @@ export const sdkController = {
     try {
       const { user_id, collection_id } = req.query;
       const apiKey = req.apiKey; // Set by validateApiKey middleware
+
+      // The response does not vary by API key — every key sees the same
+      // published stories — so collection is the only thing worth keying on.
+      const cacheKey = `sdk:stories:${collection_id ?? 'all'}`;
+      const cached = storyCache.get(cacheKey);
+      if (cached) {
+        return res.json({ success: true, data: cached, cached: true });
+      }
 
       const stories = await prisma.story.findMany({
         where: {
@@ -52,6 +73,8 @@ export const sdkController = {
           order: item.order
         }))
       }));
+
+      storyCache.set(cacheKey, transformedStories);
 
       res.json({
         success: true,
@@ -136,11 +159,10 @@ export const sdkController = {
         }
       });
 
-      // Update API key last used
-      await prisma.apiKey.update({
-        where: { id: apiKey!.id },
-        data: { lastUsedAt: new Date() }
-      });
+      // lastUsedAt is a coarse signal, so writing it on every event batch is
+      // a round trip spent for nothing. Fire it off without blocking, and at
+      // most once a minute per key.
+      touchKeyOccasionally(apiKey!.id);
 
       res.json({
         success: true,

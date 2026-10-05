@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { storyCache } from '../lib/storyCache';
 
 export const storyController = {
   // Get all stories (for dashboard)
@@ -53,6 +54,8 @@ export const storyController = {
           error: 'Story not found'
         });
       }
+
+      storyCache.clear();
 
       res.json({
         success: true,
@@ -119,6 +122,8 @@ export const storyController = {
         }
       });
 
+      storyCache.clear();
+
       res.status(201).json({
         success: true,
         data: story
@@ -169,6 +174,8 @@ export const storyController = {
         }
       });
 
+      storyCache.clear();
+
       res.json({
         success: true,
         data: story
@@ -196,6 +203,8 @@ export const storyController = {
       await prisma.story.delete({
         where: { id }
       });
+
+      storyCache.clear();
 
       res.json({
         success: true,
@@ -230,6 +239,8 @@ export const storyController = {
           }
         }
       });
+
+      storyCache.clear();
 
       res.json({
         success: true,

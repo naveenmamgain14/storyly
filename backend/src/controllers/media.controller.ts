@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { storyCache } from '../lib/storyCache';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -110,6 +111,8 @@ export const mediaController = {
         where: { id },
         data: { thumbnailUrl: `${publicBase}/uploads/${req.file.filename}` }
       });
+
+      storyCache.clear();
 
       res.json({ success: true, data: media });
     } catch (error) {
